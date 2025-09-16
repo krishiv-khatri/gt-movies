@@ -1,0 +1,116 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Movies - GT Movies Store{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Movies</h1>
+            <div class="col-md-4">
+                <form method="get" class="d-flex">
+                    {{ search_form.search }}
+                    <button type="submit" class="btn btn-outline-primary ms-2">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        {% if page_obj %}
+        <div class="row">
+            {% for movie in page_obj %}
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                <div class="card movie-card">
+                    {% if movie.image %}
+                    <img src="{{ movie.image.url }}" class="card-img-top movie-image" alt="{{ movie.title }}">
+                    {% else %}
+                    <div class="card-img-top movie-image bg-light d-flex align-items-center justify-content-center">
+                        <i class="fas fa-film fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ movie.title }}</h5>
+                        <div class="mb-2">
+                            <span class="badge bg-primary me-1">{{ movie.get_genre_display }}</span>
+                            <span class="badge bg-secondary me-1">{{ movie.get_rating_display }}</span>
+                            <span class="badge bg-info">{{ movie.release_year }}</span>
+                        </div>
+                        <p class="card-text flex-grow-1">{{ movie.description|truncatewords:15 }}</p>
+                        
+                        <!-- Rating -->
+                        {% if movie.avg_rating > 0 %}
+                        <div class="mb-2">
+                            <div class="rating-stars">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= movie.avg_rating %}
+                                        <i class="fas fa-star"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                <small class="text-muted ms-1">({{ movie.avg_rating|floatformat:1 }})</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="h5 text-primary mb-0">${{ movie.price }}</span>
+                            <a href="{% url 'movie_detail' movie.id %}" class="btn btn-outline-primary btn-sm">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Movie pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Previous</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Last</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-film fa-3x text-muted mb-3"></i>
+            <h3>No movies found</h3>
+            <p class="text-muted">
+                {% if request.GET.search %}
+                    No movies match your search criteria.
+                {% else %}
+                    No movies are available at the moment.
+                {% endif %}
+            </p>
+            {% if request.GET.search %}
+            <a href="{% url 'movie_list' %}" class="btn btn-primary">View All Movies</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

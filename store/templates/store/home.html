@@ -1,0 +1,115 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Home - GT Movies Store{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="jumbotron bg-primary text-white py-5 mb-5 rounded">
+    <div class="container text-center">
+        <h1 class="display-4">Welcome to GT Movies Store</h1>
+        <p class="lead">Discover, purchase, and enjoy the latest movies from our extensive collection.</p>
+        <a class="btn btn-light btn-lg" href="{% url 'movie_list' %}" role="button">Browse Movies</a>
+    </div>
+</div>
+
+<!-- About Section -->
+<div class="row mb-5">
+    <div class="col-lg-8 mx-auto text-center">
+        <h2 class="mb-4">About GT Movies Store</h2>
+        <p class="lead">
+            GT Movies Store is your premier destination for digital movie entertainment. 
+            We offer a vast collection of movies across all genres, from the latest blockbusters 
+            to timeless classics. Our platform provides a seamless shopping experience with 
+            secure transactions and instant access to your purchased content.
+        </p>
+        <p>
+            Whether you're a movie enthusiast looking for the latest releases or someone 
+            who enjoys discovering hidden gems, GT Movies Store has something for everyone. 
+            Create an account to start building your personal movie collection today!
+        </p>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mb-5">
+    <div class="col-md-4 text-center mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <i class="fas fa-film fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Extensive Collection</h5>
+                <p class="card-text">Browse through hundreds of movies across all genres and decades.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <i class="fas fa-shopping-cart fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Easy Shopping</h5>
+                <p class="card-text">Simple and secure checkout process with instant access to your purchases.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">User Reviews</h5>
+                <p class="card-text">Read and write reviews to help others discover great movies.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Featured Movies -->
+{% if featured_movies %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Featured Movies</h2>
+        <div class="row">
+            {% for movie in featured_movies %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card movie-card">
+                    {% if movie.image %}
+                    <img src="{{ movie.image.url }}" class="card-img-top movie-image" alt="{{ movie.title }}">
+                    {% else %}
+                    <div class="card-img-top movie-image bg-light d-flex align-items-center justify-content-center">
+                        <i class="fas fa-film fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ movie.title }}</h5>
+                        <p class="card-text flex-grow-1">{{ movie.description|truncatewords:20 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="h5 text-primary mb-0">${{ movie.price }}</span>
+                            <a href="{% url 'movie_detail' movie.id %}" class="btn btn-outline-primary btn-sm">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="{% url 'movie_list' %}" class="btn btn-primary btn-lg">View All Movies</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Call to Action -->
+<div class="row mt-5">
+    <div class="col-12 text-center">
+        <div class="bg-light p-5 rounded">
+            <h3>Ready to Start Shopping?</h3>
+            <p class="lead">Join thousands of movie lovers who trust GT Movies Store for their entertainment needs.</p>
+            {% if not user.is_authenticated %}
+            <a href="{% url 'register' %}" class="btn btn-primary btn-lg me-3">Create Account</a>
+            <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">Login</a>
+            {% else %}
+            <a href="{% url 'movie_list' %}" class="btn btn-primary btn-lg">Browse Movies</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
