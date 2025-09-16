@@ -159,6 +159,13 @@
                                 </button>
                             </form>
                         </div>
+                        {% elif user.is_authenticated %}
+                        <!-- Report button for other users -->
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-warning report-btn" data-review-id="{{ review.id }}">
+                                <i class="fas fa-flag"></i> Report
+                            </button>
+                        </div>
                         {% endif %}
                     </div>
                 </div>
@@ -173,4 +180,173 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Report Review Confirmation Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="reportModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Report Inappropriate Review
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-flag text-warning fa-2x me-3"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-2">Are you sure you want to report this review?</h6>
+                        <p class="mb-3 text-muted">
+                            This action will immediately remove the review from the page and flag it for inappropriate content. 
+                            Please only report reviews that contain offensive, irrelevant, or harmful content.
+                        </p>
+                        <div class="alert alert-light border" role="alert">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Reports help keep our community safe and ensure reviews are helpful and respectful.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-warning" id="confirmReportBtn">
+                    <i class="fas fa-flag me-1"></i>Report Review
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Toast -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="reportSuccessToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong class="me-auto">Report Submitted</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Review has been reported and removed successfully.
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for handling review reporting -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reportButtons = document.querySelectorAll('.report-btn');
+    const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+    const confirmReportBtn = document.getElementById('confirmReportBtn');
+    const reportSuccessToast = new bootstrap.Toast(document.getElementById('reportSuccessToast'));
+    
+    let currentReviewId = null;
+    let currentReviewCard = null;
+    
+    reportButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            currentReviewId = this.getAttribute('data-review-id');
+            currentReviewCard = this.closest('.col-12');
+            reportModal.show();
+        });
+    });
+    
+    confirmReportBtn.addEventListener('click', function() {
+        if (!currentReviewId) return;
+        
+        // Disable button and show loading state
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Reporting...';
+        
+        fetch(`/reviews/${currentReviewId}/report/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            reportModal.hide();
+            
+            if (data.success) {
+                // Remove the review from the page with animation
+                currentReviewCard.style.transition = 'all 0.4s ease-out';
+                currentReviewCard.style.transform = 'translateX(-100%)';
+                currentReviewCard.style.opacity = '0';
+                
+                setTimeout(() => {
+                    currentReviewCard.remove();
+                    
+                    // Check if there are no more reviews
+                    const remainingReviews = document.querySelectorAll('.col-12 .card');
+                    if (remainingReviews.length === 0) {
+                        const noReviewsHtml = `
+                            <div class="text-center py-4">
+                                <i class="fas fa-comments fa-2x text-muted mb-3"></i>
+                                <p class="text-muted">No reviews yet. Be the first to review this movie!</p>
+                            </div>
+                        `;
+                        document.querySelector('.row:last-child').innerHTML = noReviewsHtml;
+                    }
+                }, 400);
+                
+                // Show success toast
+                reportSuccessToast.show();
+            } else {
+                // Show error modal
+                showErrorModal(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            reportModal.hide();
+            showErrorModal('An error occurred while reporting the review. Please try again.');
+        })
+        .finally(() => {
+            // Reset button state
+            confirmReportBtn.disabled = false;
+            confirmReportBtn.innerHTML = '<i class="fas fa-flag me-1"></i>Report Review';
+            currentReviewId = null;
+            currentReviewCard = null;
+        });
+    });
+    
+    function showErrorModal(message) {
+        const errorModalHtml = `
+            <div class="modal fade" id="errorModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-exclamation-circle me-2"></i>Error
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-0">${message}</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', errorModalHtml);
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
+        
+        document.getElementById('errorModal').addEventListener('hidden.bs.modal', function() {
+            this.remove();
+        });
+    }
+});
+</script>
 {% endblock %}

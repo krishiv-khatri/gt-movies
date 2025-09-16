@@ -84,7 +84,7 @@ def movie_list(request):
 def movie_detail(request, movie_id):
     """Movie details and reviews"""
     movie = get_object_or_404(Movie, id=movie_id)
-    reviews = movie.reviews.all()
+    reviews = movie.reviews.filter(is_reported=False)  # Only show non-reported reviews
     
     # Calculate average rating
     avg_rating = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
@@ -261,3 +261,33 @@ def delete_review(request, review_id):
     review.delete()
     messages.success(request, 'Review deleted successfully!')
     return redirect('movie_detail', movie_id=movie_id)
+
+
+@login_required
+@require_POST
+def report_review(request, review_id):
+    """Report a review as inappropriate"""
+    review = get_object_or_404(Review, id=review_id)
+    
+    # Prevent users from reporting their own reviews
+    if review.user == request.user:
+        return JsonResponse({
+            'success': False, 
+            'message': 'You cannot report your own review.'
+        })
+    
+    # Check if review is already reported
+    if review.is_reported:
+        return JsonResponse({
+            'success': False, 
+            'message': 'This review has already been reported.'
+        })
+    
+    # Mark review as reported
+    review.is_reported = True
+    review.save()
+    
+    return JsonResponse({
+        'success': True, 
+        'message': 'Review reported successfully. It has been removed from the page.'
+    })
