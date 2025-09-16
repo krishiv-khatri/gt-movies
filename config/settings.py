@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-zf=yslos#-_(eq)1_1kzt-w()(n2re3=9=r)3&6z&p4^)=pp-4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['krishiv2409.pythonanywhere.com']
+ALLOWED_HOSTS = ['krishiv2409.pythonanywhere.com', 'www.krishiv2409.pythonanywhere.com']
 
 
 # Application definition
