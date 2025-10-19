@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import Movie, Review, Cart, Order, OrderItem
+from .models import Movie, Review, Cart, Order, OrderItem, Rating
 
 
 class OrderItemInline(admin.TabularInline):
@@ -27,6 +27,15 @@ class MovieAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(Rating)
+class RatingAdmin(admin.ModelAdmin):
+    list_display = ['user', 'movie', 'rating', 'created_at']
+    list_filter = ['rating', 'created_at']
+    search_fields = ['user__username', 'movie__title']
+    ordering = ['-created_at']
     readonly_fields = ['created_at', 'updated_at']
 
 

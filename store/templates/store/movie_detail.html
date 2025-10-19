@@ -18,18 +18,58 @@
         <h1>{{ movie.title }}</h1>
         
         <!-- Rating -->
-        {% if avg_rating > 0 %}
         <div class="mb-3">
             <div class="rating-stars">
-                {% for i in "12345" %}
-                    {% if forloop.counter <= avg_rating %}
-                        <i class="fas fa-star"></i>
-                    {% else %}
-                        <i class="far fa-star"></i>
-                    {% endif %}
-                {% endfor %}
-                <span class="ms-2">{{ avg_rating|floatformat:1 }}/5.0 ({{ reviews.count }} review{{ reviews.count|pluralize }})</span>
+                {% if avg_rating > 0 %}
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= avg_rating %}
+                            <i class="fas fa-star"></i>
+                        {% else %}
+                            <i class="far fa-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                    <span class="ms-2" id="avg-rating-display">{{ avg_rating|floatformat:1 }}/5.0 (<span id="rating-count">{{ total_ratings_count }}</span> rating{{ total_ratings_count|pluralize }})</span>
+                {% else %}
+                    <span class="text-muted">No ratings yet</span>
+                {% endif %}
             </div>
+        </div>
+        
+        <!-- Quick Rating Section -->
+        {% if user.is_authenticated %}
+        <div class="card mb-4 border-primary">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-star text-warning"></i> Quick Rate This Movie
+                </h5>
+                <p class="text-muted small mb-3">Click on the stars to rate (no review required)</p>
+                
+                <div class="quick-rating-container">
+                    <div class="star-rating-input" id="starRatingInput">
+                        {% for i in "12345" %}
+                        <i class="far fa-star star-icon" data-rating="{{ forloop.counter }}" style="cursor: pointer; font-size: 2rem; color: #ffc107;"></i>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if user_rating %}
+                    <div class="mt-2">
+                        <span class="badge bg-success" id="user-rating-badge">
+                            <i class="fas fa-check-circle"></i> You rated this {{ user_rating.rating }}/5 stars
+                        </span>
+                    </div>
+                    {% else %}
+                    <div class="mt-2">
+                        <span class="text-muted small" id="rating-hint">Select a rating above</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div id="rating-message" class="mt-2"></div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> Please <a href="{% url 'login' %}" class="alert-link">login</a> to rate this movie.
         </div>
         {% endif %}
         
@@ -237,9 +277,154 @@
     </div>
 </div>
 
-<!-- JavaScript for handling review reporting -->
+<!-- JavaScript for handling star rating and review reporting -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // ===== Star Rating Functionality =====
+    const starIcons = document.querySelectorAll('.star-icon');
+    const ratingMessage = document.getElementById('rating-message');
+    const userRatingBadge = document.getElementById('user-rating-badge');
+    const avgRatingDisplay = document.getElementById('avg-rating-display');
+    const ratingCount = document.getElementById('rating-count');
+    let currentUserRating = {% if user_rating %}{{ user_rating.rating }}{% else %}0{% endif %};
+    
+    // Initialize stars with user's existing rating
+    if (currentUserRating > 0) {
+        updateStarDisplay(currentUserRating);
+    }
+    
+    // Hover effect
+    starIcons.forEach(function(star) {
+        star.addEventListener('mouseenter', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            highlightStars(rating);
+        });
+    });
+    
+    // Reset to current rating on mouse leave
+    document.getElementById('starRatingInput').addEventListener('mouseleave', function() {
+        if (currentUserRating > 0) {
+            updateStarDisplay(currentUserRating);
+        } else {
+            resetStars();
+        }
+    });
+    
+    // Click to submit rating
+    starIcons.forEach(function(star) {
+        star.addEventListener('click', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            submitRating(rating);
+        });
+    });
+    
+    function highlightStars(rating) {
+        starIcons.forEach(function(star, index) {
+            if (index < rating) {
+                star.classList.remove('far');
+                star.classList.add('fas');
+            } else {
+                star.classList.remove('fas');
+                star.classList.add('far');
+            }
+        });
+    }
+    
+    function resetStars() {
+        starIcons.forEach(function(star) {
+            star.classList.remove('fas');
+            star.classList.add('far');
+        });
+    }
+    
+    function updateStarDisplay(rating) {
+        starIcons.forEach(function(star, index) {
+            if (index < rating) {
+                star.classList.remove('far');
+                star.classList.add('fas');
+            } else {
+                star.classList.remove('fas');
+                star.classList.add('far');
+            }
+        });
+    }
+    
+    function submitRating(rating) {
+        const formData = new FormData();
+        formData.append('rating', rating);
+        
+        fetch('{% url "submit_rating" movie.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentUserRating = rating;
+                updateStarDisplay(rating);
+                
+                // Update user rating badge
+                if (userRatingBadge) {
+                    userRatingBadge.innerHTML = `<i class="fas fa-check-circle"></i> You rated this ${rating}/5 stars`;
+                } else {
+                    const hint = document.getElementById('rating-hint');
+                    if (hint) {
+                        hint.outerHTML = `<span class="badge bg-success" id="user-rating-badge"><i class="fas fa-check-circle"></i> You rated this ${rating}/5 stars</span>`;
+                    }
+                }
+                
+                // Update average rating display
+                if (avgRatingDisplay) {
+                    avgRatingDisplay.innerHTML = `${data.avg_rating}/5.0 (<span id="rating-count">${data.total_count}</span> rating${data.total_count !== 1 ? 's' : ''})`;
+                } else {
+                    // If no ratings existed before, update the whole section
+                    const ratingStars = document.querySelector('.rating-stars');
+                    ratingStars.innerHTML = `
+                        <i class="fas fa-star"></i>
+                        <i class="far fa-star"></i>
+                        <i class="far fa-star"></i>
+                        <i class="far fa-star"></i>
+                        <i class="far fa-star"></i>
+                        <span class="ms-2" id="avg-rating-display">${data.avg_rating}/5.0 (<span id="rating-count">${data.total_count}</span> rating${data.total_count !== 1 ? 's' : ''})</span>
+                    `;
+                }
+                
+                // Show success message
+                ratingMessage.innerHTML = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle"></i> ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                
+                // Auto-dismiss after 3 seconds
+                setTimeout(() => {
+                    ratingMessage.innerHTML = '';
+                }, 3000);
+            } else {
+                ratingMessage.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle"></i> ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            ratingMessage.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle"></i> An error occurred. Please try again.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        });
+    }
+    
+    // ===== Review Reporting Functionality =====
     const reportButtons = document.querySelectorAll('.report-btn');
     const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
     const confirmReportBtn = document.getElementById('confirmReportBtn');

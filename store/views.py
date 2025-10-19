@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from .models import Movie, Review, Cart, Order, OrderItem
+from .models import Movie, Review, Cart, Order, OrderItem, Rating
 from .forms import CustomUserCreationForm, ReviewForm, MovieSearchForm
 
 
@@ -86,15 +86,32 @@ def movie_detail(request, movie_id):
     movie = get_object_or_404(Movie, id=movie_id)
     reviews = movie.reviews.filter(is_reported=False)  # Only show non-reported reviews
     
-    # Calculate average rating
-    avg_rating = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
+    # Calculate average rating from both reviews and quick ratings
+    review_ratings = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
+    quick_ratings = movie.ratings.aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
+    
+    # Combine both ratings for overall average
+    total_reviews = reviews.count()
+    total_ratings = movie.ratings.count()
+    
+    if total_reviews + total_ratings > 0:
+        avg_rating = ((review_ratings * total_reviews) + (quick_ratings * total_ratings)) / (total_reviews + total_ratings)
+    else:
+        avg_rating = 0
     
     # Check if user has already reviewed this movie
     user_review = None
+    user_rating = None
     if request.user.is_authenticated:
         try:
             user_review = reviews.get(user=request.user)
         except Review.DoesNotExist:
+            pass
+        
+        # Check if user has given a quick rating
+        try:
+            user_rating = movie.ratings.get(user=request.user)
+        except Rating.DoesNotExist:
             pass
     
     # Review form
@@ -105,7 +122,9 @@ def movie_detail(request, movie_id):
         'reviews': reviews,
         'avg_rating': avg_rating,
         'user_review': user_review,
+        'user_rating': user_rating,
         'review_form': review_form,
+        'total_ratings_count': total_reviews + total_ratings,
     })
 
 
@@ -290,4 +309,54 @@ def report_review(request, review_id):
     return JsonResponse({
         'success': True, 
         'message': 'Review reported successfully. It has been removed from the page.'
+    })
+
+
+@login_required
+@require_POST
+def submit_rating(request, movie_id):
+    """Submit or update a quick rating for a movie"""
+    movie = get_object_or_404(Movie, id=movie_id)
+    
+    try:
+        rating_value = int(request.POST.get('rating'))
+        if rating_value < 1 or rating_value > 5:
+            return JsonResponse({
+                'success': False,
+                'message': 'Rating must be between 1 and 5 stars.'
+            })
+    except (TypeError, ValueError):
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid rating value.'
+        })
+    
+    # Create or update rating
+    rating, created = Rating.objects.update_or_create(
+        movie=movie,
+        user=request.user,
+        defaults={'rating': rating_value}
+    )
+    
+    # Recalculate average rating
+    reviews = movie.reviews.filter(is_reported=False)
+    review_ratings = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
+    quick_ratings = movie.ratings.aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
+    
+    total_reviews = reviews.count()
+    total_ratings = movie.ratings.count()
+    
+    if total_reviews + total_ratings > 0:
+        avg_rating = ((review_ratings * total_reviews) + (quick_ratings * total_ratings)) / (total_reviews + total_ratings)
+    else:
+        avg_rating = 0
+    
+    action = 'submitted' if created else 'updated'
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Rating {action} successfully!',
+        'rating': rating_value,
+        'avg_rating': round(avg_rating, 1),
+        'total_count': total_reviews + total_ratings
     })
