@@ -309,7 +309,6 @@ def report_review(request, review_id):
         'message': 'Review reported successfully. It has been removed from the page.'
     })
 
-<<<<<<< HEAD
     # Page: renders the map
 def popularity_map(request):
     regions = dict(Order.REGION_CHOICES)
@@ -344,7 +343,6 @@ def api_trending_by_region(request, region):
     data = [{'title': row['movie__title'], 'count': row['total']} for row in qs]
     print(f"DEBUG: Returned {len(data)} movies")
     return JsonResponse({'region': region, 'top': data})
-=======
 
 @login_required
 @require_POST
@@ -394,4 +392,3 @@ def submit_rating(request, movie_id):
         'avg_rating': round(avg_rating, 1),
         'total_count': total_reviews + total_ratings
     })
->>>>>>> c9665a95937983e9b3e9690c62447c3ea61d3def
