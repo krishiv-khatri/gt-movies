@@ -70,6 +70,30 @@ class Movie(models.Model):
         return f"{minutes}m"
 
 
+class Rating(models.Model):
+    """Quick rating model - allows users to rate without writing a review"""
+    RATING_CHOICES = [
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    ]
+
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='ratings')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ratings')
+    rating = models.IntegerField(choices=RATING_CHOICES, validators=[MinValueValidator(1), MaxValueValidator(5)])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['movie', 'user']  # One rating per user per movie
+
+    def __str__(self):
+        return f"{self.user.username}'s {self.rating}-star rating of {self.movie.title}"
+
+
 class Review(models.Model):
     RATING_CHOICES = [
         (1, '1 Star'),

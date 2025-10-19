@@ -30,8 +30,14 @@ urlpatterns = [
     path('reviews/<int:review_id>/update/', views.update_review, name='update_review'),
     path('reviews/<int:review_id>/delete/', views.delete_review, name='delete_review'),
     path('reviews/<int:review_id>/report/', views.report_review, name='report_review'),
+<<<<<<< HEAD
 
     # Popularity
     path('popularity/', views.popularity_map, name='popularity_map'),
     path('api/trending/<str:region>/', views.api_trending_by_region, name='api_trending_by_region'),
+=======
+    
+    # Ratings
+    path('movies/<int:movie_id>/rate/', views.submit_rating, name='submit_rating'),
+>>>>>>> c9665a95937983e9b3e9690c62447c3ea61d3def
 ]
