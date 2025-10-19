@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-zf=yslos#-_(eq)1_1kzt-w()(n2re3=9=r)3&6z&p4^)=pp-4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'krishiv2409.pythonanywhere.com', 'www.krishiv2409.pythonanywhere.com']
 
