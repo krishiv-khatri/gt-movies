@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class Movie(models.Model):
@@ -118,9 +120,19 @@ class Order(models.Model):
         ('cancelled', 'Cancelled'),
     ]
 
+    REGION_CHOICES = [
+        ('northeast', 'Northeast'),
+        ('southeast', 'Southeast'),
+        ('midwest', 'Midwest'),
+        ('west', 'West'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     movies = models.ManyToManyField(Movie, through='OrderItem')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    #User story 1: track where order occurred
+    region = models.CharField(max_length=20, choices=REGION_CHOICES, default='northeast')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -145,3 +157,10 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.movie.title} in Order #{self.order.id}"
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+    else:
+        instance.profile.save()

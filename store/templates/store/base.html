@@ -15,39 +15,21 @@
             font-weight: bold;
             color: #007bff !important;
         }
-        .card {
-            transition: transform 0.2s;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        .movie-card {
-            height: 100%;
-        }
-        .movie-image {
-            height: 300px;
-            object-fit: cover;
-        }
-        .rating-stars {
-            color: #ffc107;
-        }
-        .footer {
-            background-color: #f8f9fa;
-            margin-top: 50px;
-        }
+        .card { transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        .movie-card { height: 100%; }
+        .movie-image { height: 300px; object-fit: cover; }
+        .rating-stars { color: #ffc107; }
+        .footer { background-color: #f8f9fa; margin-top: 50px; }
         .cart-badge {
             position: absolute;
-            top: -8px;
-            right: -8px;
+            top: -8px; right: -8px;
             background-color: #dc3545;
             color: white;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 20px; height: 20px;
             font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
         }
     </style>
     
@@ -66,6 +48,7 @@
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- Left-side links -->
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'home' %}">Home</a>
@@ -73,8 +56,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'movie_list' %}">Movies</a>
                     </li>
-                    {% if user.is_authenticated %}
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'popularity_map' %}">Popularity Map</a>
+                    </li>
+                    {% if user.is_authenticated %}
+                    <li class="nav-item position-relative">
                         <a class="nav-link" href="{% url 'cart' %}">
                             <i class="fas fa-shopping-cart"></i> Cart
                             {% if user.cart.get_movie_count > 0 %}
@@ -87,14 +73,15 @@
                     </li>
                     {% endif %}
                 </ul>
-                
+
+                <!-- Right-side (login/profile) -->
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user"></i> {{ user.username }}
                         </a>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'orders' %}">My Orders</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
@@ -151,4 +138,3 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
-

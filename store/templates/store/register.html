@@ -13,6 +13,7 @@
                 <form method="post">
                     {% csrf_token %}
                     
+                    <!-- Username -->
                     <div class="mb-3">
                         <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
                         {{ form.username }}
@@ -25,6 +26,7 @@
                         {% endif %}
                     </div>
                     
+                    <!-- Name fields -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
@@ -49,7 +51,21 @@
                             {% endif %}
                         </div>
                     </div>
-                    
+
+                    <!-- ✅ Region dropdown -->
+                    <div class="mb-3">
+                        <label for="{{ form.region.id_for_label }}" class="form-label">Region</label>
+                        {{ form.region }}
+                        {% if form.region.errors %}
+                        <div class="text-danger">
+                            {% for error in form.region.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Email -->
                     <div class="mb-3">
                         <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
                         {{ form.email }}
@@ -61,7 +77,8 @@
                         </div>
                         {% endif %}
                     </div>
-                    
+
+                    <!-- Passwords -->
                     <div class="mb-3">
                         <label for="{{ form.password1.id_for_label }}" class="form-label">Password</label>
                         {{ form.password1 }}
@@ -73,7 +90,7 @@
                         </div>
                         {% endif %}
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm Password</label>
                         {{ form.password2 }}
@@ -109,4 +126,3 @@
     }
 </style>
 {% endblock %}
-

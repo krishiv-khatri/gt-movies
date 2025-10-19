@@ -2,12 +2,13 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Avg
+from django.db.models import Q, Avg, Sum
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-import json
+from django.http import JsonResponse
+from .models import Order, OrderItem
 
 from .models import Movie, Review, Cart, Order, OrderItem
 from .forms import CustomUserCreationForm, ReviewForm, MovieSearchForm
@@ -165,30 +166,27 @@ def orders_view(request):
 
 @login_required
 @require_POST
+@login_required
 def place_order(request):
-    """Place order from cart"""
-    cart = get_object_or_404(Cart, user=request.user)
-    
-    if not cart.movies.exists():
-        messages.error(request, 'Your cart is empty!')
+    cart = Cart.objects.filter(user=request.user).first()
+    if not cart or not cart.movies.exists():
+        messages.error(request, "Your cart is empty.")
         return redirect('cart')
-    
-    # Create order
-    order = Order.objects.create(user=request.user)
-    
-    # Add movies to order
+
+    # 👇 get region directly from the user record
+    region = getattr(request.user, "region", "southeast")
+
+    order = Order.objects.create(
+        user=request.user,
+        status='pending',
+        region=region     # 👈 stores the user’s region on every order
+    )
+
     for movie in cart.movies.all():
-        OrderItem.objects.create(
-            order=order,
-            movie=movie,
-            quantity=1,
-            price=movie.price
-        )
-    
-    # Clear cart
+        OrderItem.objects.create(order=order, movie=movie, quantity=1, price=movie.price)
+
     cart.movies.clear()
-    
-    messages.success(request, f'Order #{order.id} placed successfully!')
+    messages.success(request, f"Order #{order.id} placed successfully!")
     return redirect('orders')
 
 
@@ -291,3 +289,38 @@ def report_review(request, review_id):
         'success': True, 
         'message': 'Review reported successfully. It has been removed from the page.'
     })
+
+    # Page: renders the map
+def popularity_map(request):
+    regions = dict(Order.REGION_CHOICES)
+    return render(request, 'store/popularity_map.html', {'regions': regions})
+
+
+def api_trending_by_region(request, region):
+    """Returns top movies by region, or global if region='global'."""
+    valid_regions = {k for k, _ in Order.REGION_CHOICES}
+
+    # Debug log (appears in console)
+    print(f"DEBUG: Requested region = {region}")
+
+    # ✅ Handle the global case first
+    if region == "global":
+        qs = (OrderItem.objects
+              .values('movie__title')
+              .annotate(total=Sum('quantity'))
+              .order_by('-total')[:10])
+        print("DEBUG: Using GLOBAL query")
+    elif region in valid_regions:
+        qs = (OrderItem.objects
+              .filter(order__region=region)
+              .values('movie__title')
+              .annotate(total=Sum('quantity'))
+              .order_by('-total')[:10])
+        print(f"DEBUG: Using REGION query: {region}")
+    else:
+        print("DEBUG: INVALID region triggered")
+        return JsonResponse({'error': f'invalid region: {region}'}, status=400)
+
+    data = [{'title': row['movie__title'], 'count': row['total']} for row in qs]
+    print(f"DEBUG: Returned {len(data)} movies")
+    return JsonResponse({'region': region, 'top': data})
