@@ -154,6 +154,8 @@ class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     movies = models.ManyToManyField(Movie, through='OrderItem')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    region = models.CharField(max_length=16, choices=REGION_CHOICES, default='southeast')
+
 
     #User story 1: track where order occurred
     region = models.CharField(max_length=20, choices=REGION_CHOICES, default='northeast')
@@ -181,10 +183,3 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.movie.title} in Order #{self.order.id}"
-
-@receiver(post_save, sender=User)
-def create_or_update_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-    else:
-        instance.profile.save()
