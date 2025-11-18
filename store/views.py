@@ -10,8 +10,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from .models import Order, OrderItem
 
-from .models import Movie, Review, Cart, Order, OrderItem, Rating
-from .forms import CustomUserCreationForm, ReviewForm, MovieSearchForm
+from .models import Movie, Review, Cart, Order, OrderItem, Rating, UserProfile
+from .forms import CustomUserCreationForm, ReviewForm, MovieSearchForm, UserProfileForm
 
 
 def home(request):
@@ -391,4 +391,31 @@ def submit_rating(request, movie_id):
         'rating': rating_value,
         'avg_rating': round(avg_rating, 1),
         'total_count': total_reviews + total_ratings
+    })
+
+
+@login_required
+def profile_view(request):
+    """Display user profile"""
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    return render(request, 'store/profile.html', {'profile': profile})
+
+
+@login_required
+def profile_edit(request):
+    """Edit user profile"""
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('profile')
+    else:
+        form = UserProfileForm(instance=profile)
+    
+    return render(request, 'store/profile_edit.html', {
+        'form': form,
+        'profile': profile,
     })

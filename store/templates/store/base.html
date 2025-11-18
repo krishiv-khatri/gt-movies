@@ -79,12 +79,21 @@
                     {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ user.username }}
+                            {% if user.profile.profile_picture %}
+                                <img src="{{ user.profile.profile_picture.url }}" 
+                                     alt="{{ user.username }}" 
+                                     class="rounded-circle"
+                                     style="width: 25px; height: 25px; object-fit: cover; margin-right: 5px;">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                            {{ user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{% url 'orders' %}">My Orders</a></li>
+                            <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fas fa-user-circle"></i> My Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'orders' %}"><i class="fas fa-box"></i> My Orders</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                         </ul>
                     </li>
                     {% else %}

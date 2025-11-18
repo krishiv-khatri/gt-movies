@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import Movie, Review, Cart, Order, OrderItem, Rating
+from .models import Movie, Review, Cart, Order, OrderItem, Rating, UserProfile
 
 
 class OrderItemInline(admin.TabularInline):
@@ -88,11 +88,36 @@ class OrderItemAdmin(admin.ModelAdmin):
     get_total_price.short_description = 'Total Price'
 
 
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ['user', 'get_email', 'get_full_name', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['user__username', 'user__email', 'user__first_name', 'user__last_name', 'bio']
+    ordering = ['-created_at']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def get_email(self, obj):
+        return obj.user.email
+    get_email.short_description = 'Email'
+    
+    def get_full_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}".strip() or "N/A"
+    get_full_name.short_description = 'Full Name'
+
+
 # Customize User admin
+class ProfileInline(admin.StackedInline):
+    model = UserProfile
+    can_delete = False
+    verbose_name_plural = 'Profile'
+    fields = ['profile_picture', 'bio']
+
+
 class CustomUserAdmin(UserAdmin):
     list_display = ['username', 'email', 'first_name', 'last_name', 'is_staff', 'date_joined']
     list_filter = ['is_staff', 'is_superuser', 'is_active', 'date_joined']
     search_fields = ['username', 'first_name', 'last_name', 'email']
+    inlines = [ProfileInline]
 
 
 # Unregister the default User admin and register our custom one
