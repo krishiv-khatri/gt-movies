@@ -154,7 +154,7 @@ class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     movies = models.ManyToManyField(Movie, through='OrderItem')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-
+    
     #User story 1: track where order occurred
     region = models.CharField(max_length=20, choices=REGION_CHOICES, default='northeast')
     created_at = models.DateTimeField(auto_now_add=True)
